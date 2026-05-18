@@ -1,7 +1,9 @@
 from datetime import datetime
-from typing import Union
+from typing import Union, Generic, TypeVar, List
 
 from pydantic import BaseModel, ConfigDict
+
+T = TypeVar('T')
 
 
 # --- GPU ---
@@ -98,6 +100,6 @@ class ExperimentResponse(BaseModel):
 
 # --- Pagination ---
 
-class PaginatedResponse(BaseModel):
-    items: list
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: List[T]
     total: int
