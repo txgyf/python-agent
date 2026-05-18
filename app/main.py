@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.database import init_db
-from app.routers import gpus
+from app.routers import gpus, models, experiments
 
 
 @asynccontextmanager
@@ -14,3 +14,5 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="LLM Deployment Tracker", lifespan=lifespan)
 app.include_router(gpus.router)
+app.include_router(models.router)
+app.include_router(experiments.router)
