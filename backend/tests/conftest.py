@@ -7,13 +7,17 @@ from server.db.base_class import Base
 from server.db.session import get_db
 from server.main import app
 
-TEST_DB_URL = "sqlite://"
-test_engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
+TEST_DB_URL = "sqlite:///:memory:"
+test_engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False}, pool_pre_ping=True)
 TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
 
+# Global test connection to ensure all sessions use the same in-memory database
+test_connection = test_engine.connect()
+
+
 def override_get_db():
-    db = TestSessionLocal()
+    db = TestSessionLocal(bind=test_connection)
     try:
         yield db
     finally:
@@ -23,7 +27,7 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def setup_db():
     Base.metadata.create_all(bind=test_engine)
     yield
