@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8014:8014"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/infereval.db
+    restart: unless-stopped

@@ -12,3 +12,5 @@ build/
 .pytest_cache/
 *.db
 data/*.db
+backend/.venv/
+backend/infereval.db
