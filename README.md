@@ -5,7 +5,7 @@ LLM 推理性能评估平台的 RESTful 后端 API，用于管理推理基准测
 ## 技术栈
 
 - Python 3.10+ / FastAPI
-- SQLAlchemy 2.x + SQLite
+- SQLAlchemy 2.x + SQLite（本地）/ PostgreSQL（生产）
 - Pydantic v2
 - pytest
 
@@ -68,4 +68,44 @@ backend/
 ├── tests/                   # 测试用例
 ├── seed.py                  # 种子数据脚本
 └── requirements.txt
+```
+
+## 部署到腾讯云
+
+### 方式一：云服务器（CVM）+ Docker（推荐）
+
+1. 购买一台轻量应用服务器（2核4G 够用），选 Ubuntu 系统
+2. SSH 登录服务器，安装 Docker：
+   ```bash
+   curl -fsSL https://get.docker.com | sh
+   ```
+3. 拉取代码并启动：
+   ```bash
+   git clone https://github.com/txgyf/python-agent.git
+   cd python-agent
+   export DB_PASSWORD=改成一个强密码
+   docker compose up -d
+   ```
+4. 在腾讯云安全组中放行 8014 端口
+5. 访问 `http://你的服务器IP:8014/docs`
+
+### 方式二：云服务器 + 托管数据库（TencentDB）
+
+如果需要独立的数据库服务：
+
+1. 在腾讯云购买 **TencentDB for PostgreSQL** 实例
+2. 修改 `docker-compose.yml`，删除 `db` 服务，将 `DATABASE_URL` 改为 TencentDB 的连接地址：
+   ```yaml
+   environment:
+     - DATABASE_URL=postgresql://用户名:密码@数据库地址:5432/infereval
+   ```
+3. 其余步骤与方式一相同
+
+### 常用运维命令
+
+```bash
+docker compose logs -f       # 查看日志
+docker compose restart       # 重启服务
+docker compose down          # 停止服务
+docker compose pull && docker compose up -d   # 更新代码后重新部署
 ```

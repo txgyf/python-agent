@@ -1,10 +1,29 @@
 services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: infereval
+      POSTGRES_USER: infereval
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U infereval"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   app:
     build: .
     ports:
       - "8014:8014"
-    volumes:
-      - ./data:/app/data
     environment:
-      - DATABASE_URL=sqlite:///./data/infereval.db
+      - DATABASE_URL=postgresql://infereval:${DB_PASSWORD:-changeme}@db:5432/infereval
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  pgdata:
