@@ -2,6 +2,7 @@ import os
 import json
 
 import httpx
+from langchain_core.tools import tool
 
 API_BASE = os.environ.get("INFEREVAL_API_BASE", "http://localhost:8014")
 
@@ -12,14 +13,17 @@ def _get(path: str, params: dict | None = None) -> str:
     return resp.text
 
 
+@tool(description="查询所有 GPU 芯片规格，包括芯片名称、算力、显存、带宽等参数")
 def search_compute_specs() -> str:
     return _get("/api/v1/compute-specs")
 
 
+@tool(description="查询所有 LLM 模型元数据，包括模型名称、架构、参数量等")
 def search_models() -> str:
     return _get("/api/v1/models")
 
 
+@tool(description="按条件搜索实验记录，可按模型ID、芯片ID、实验名称模糊搜索")
 def search_experiments(
     model_id: int | None = None,
     compute_spec_id: int | None = None,
@@ -35,10 +39,12 @@ def search_experiments(
     return _get("/api/v1/experiments", params=params)
 
 
+@tool(description="获取某个实验的完整详情，包含关联的芯片规格、模型信息和所有性能指标")
 def get_experiment_detail(experiment_id: int) -> str:
     return _get(f"/api/v1/experiments/{experiment_id}")
 
 
+@tool(description="对比多个实验的性能指标，输入实验ID列表，返回结构化对比数据")
 def compare_experiments(experiment_ids: list[int]) -> str:
     rows = []
     for eid in experiment_ids:
@@ -59,6 +65,7 @@ def compare_experiments(experiment_ids: list[int]) -> str:
     return json.dumps(rows, ensure_ascii=False, indent=2)
 
 
+@tool(description="调用 LLM 对指定实验生成文字化的性能对比总结")
 def generate_summary(experiment_ids: list[int], focus: str | None = None) -> str:
     rows = []
     for eid in experiment_ids:
@@ -198,3 +205,5 @@ TOOLS_SCHEMA = [
         },
     },
 ]
+
+LANGCHAIN_TOOLS = [search_compute_specs, search_models, search_experiments, get_experiment_detail, compare_experiments, generate_summary]
