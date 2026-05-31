@@ -36,18 +36,18 @@ backend/agent/
 
 ## 查询工具
 
-| 工具 | 调用的 API | 参数 | 用途 |
-|------|-----------|------|------|
-| `search_compute_specs` | `GET /api/v1/compute-specs` | 无 | 查询所有 GPU 芯片及参数 |
-| `search_models` | `GET /api/v1/models` | 无 | 查询所有模型元数据 |
-| `search_experiments` | `GET /api/v1/experiments` | `model_id`, `compute_spec_id`, `experiment_name_q`（均可选） | 按条件查实验 |
-| `get_experiment_detail` | `GET /api/v1/experiments/{id}` | `experiment_id` | 查某个实验的完整结果（含嵌套的芯片、模型、指标） |
+| 工具                    | 调用的 API                     | 参数                                                         | 用途                                             |
+| ----------------------- | ------------------------------ | ------------------------------------------------------------ | ------------------------------------------------ |
+| `search_compute_specs`  | `GET /api/v1/compute-specs`    | 无                                                           | 查询所有 GPU 芯片及参数                          |
+| `search_models`         | `GET /api/v1/models`           | 无                                                           | 查询所有模型元数据                               |
+| `search_experiments`    | `GET /api/v1/experiments`      | `model_id`, `compute_spec_id`, `experiment_name_q`（均可选） | 按条件查实验                                     |
+| `get_experiment_detail` | `GET /api/v1/experiments/{id}` | `experiment_id`                                              | 查某个实验的完整结果（含嵌套的芯片、模型、指标） |
 
 每个工具内部用 `httpx` 调后端 API，返回 JSON 供 LLM 理解。
 
 ## Agent 核心（agent.py）
 
-1. 初始化 DeepSeek 客户端（`base_url=https://api.deepseek.com`，用 `openai` SDK）
+1. 初始化 DeepSeek 客户端（`base_url=https://api.deepseek.com`，模型 `deepseek-v4-pro`，用 `openai` SDK）
 2. 注册工具函数和 function calling schema
 3. `chat(message)` 流程：
    - 用户消息加入对话历史
@@ -64,15 +64,16 @@ backend/agent/
 
 ## 环境变量
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `DEEPSEEK_API_KEY` | DeepSeek API Key（必填） | — |
-| `DEEPSEEK_MODEL` | 模型名 | `deepseek-chat` |
-| `INFEREVAL_API_BASE` | 后端 API 地址 | `http://localhost:8014` |
+| 变量                 | 说明                     | 默认值                  |
+| -------------------- | ------------------------ | ----------------------- |
+| `DEEPSEEK_API_KEY`   | DeepSeek API Key（必填） | —                       |
+| `DEEPSEEK_MODEL`     | 模型名                   | `deepseek-v4-pro`         |
+| `INFEREVAL_API_BASE` | 后端 API 地址            | `http://localhost:8014` |
 
 ## 新增依赖
 
 在 `backend/requirements.txt` 加：
+
 ```
 openai>=1.0.0
 ```
@@ -93,5 +94,6 @@ Agent 的 system prompt 指定角色为 InfereVal 平台的数据查询助手，
 ## 后续扩展
 
 Agent 核心逻辑与界面解耦，`chat(message)` 接口可直接复用于：
+
 - 飞书机器人 → 接收飞书消息 → `agent.chat()` → 回复到飞书
 - Web 聊天界面 → 同理
