@@ -126,6 +126,15 @@ def _serialize_list(items):
     return adapter.dump_json(items).decode()
 
 
+@router.get("/experiments/{exp_id}", response_model=Experiment)
+def get_experiment(exp_id: int, db: Session = Depends(get_db)):
+    from server.models.experiment import Experiment as ExperimentModel
+    exp = db.query(ExperimentModel).filter(ExperimentModel.id == exp_id).first()
+    if not exp:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    return exp
+
+
 @router.post("/experiments", response_model=ExperimentSimple, status_code=201)
 def create_experiment(data: ExperimentCreate, db: Session = Depends(get_db)):
     return crud.create_experiment(db, data)

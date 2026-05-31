@@ -39,11 +39,55 @@ def get_experiment_detail(experiment_id: int) -> str:
     return _get(f"/api/v1/experiments/{experiment_id}")
 
 
+def compare_experiments(experiment_ids: list[int]) -> str:
+    rows = []
+    for eid in experiment_ids:
+        data = json.loads(_get(f"/api/v1/experiments/{eid}"))
+        rows.append({
+            "experiment_id": data["id"],
+            "experiment_name": data.get("experiment_name"),
+            "chip": data["compute_spec"]["chip_name"],
+            "model": data["model"]["model_name"],
+            "engine": f"{data['engine']} {data['engine_version']}",
+            "deployment_precision": data["deployment_precision"],
+            "resource_count": data["resource_count"],
+            "isl": data["isl"],
+            "osl": data["osl"],
+            "concurrency": data["concurrency"],
+            "result": data["result"],
+        })
+    return json.dumps(rows, ensure_ascii=False, indent=2)
+
+
+def generate_summary(experiment_ids: list[int], focus: str | None = None) -> str:
+    rows = []
+    for eid in experiment_ids:
+        data = json.loads(_get(f"/api/v1/experiments/{eid}"))
+        rows.append(data)
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    model = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-pro")
+    client = __import__("openai").OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
+    focus_text = f"重点关注：{focus}" if focus else ""
+    prompt = f"""请根据以下实验数据，用中文生成 2-5 条分条性能对比总结。按模型架构分组，以第一个实验的芯片为基准对比各芯片的吞吐和时延指标，最后给一条总结性结论。
+{focus_text}
+
+实验数据：
+{json.dumps(rows, ensure_ascii=False, indent=2)}"""
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.25,
+    )
+    return resp.choices[0].message.content
+
+
 TOOL_FUNCTIONS = {
     "search_compute_specs": search_compute_specs,
     "search_models": search_models,
     "search_experiments": search_experiments,
     "get_experiment_detail": get_experiment_detail,
+    "compare_experiments": compare_experiments,
+    "generate_summary": generate_summary,
 }
 
 TOOLS_SCHEMA = [
@@ -110,6 +154,46 @@ TOOLS_SCHEMA = [
                     },
                 },
                 "required": ["experiment_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "compare_experiments",
+            "description": "对比多个实验的性能指标。输入实验ID列表，返回结构化对比数据（吞吐、时延、显存等），自动生成对比表格。当用户要求对比/比较不同实验或芯片的性能时使用。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "experiment_ids": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": "要对比的实验ID列表",
+                    },
+                },
+                "required": ["experiment_ids"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_summary",
+            "description": "调用 LLM 对指定实验生成文字化的性能对比总结（2-5条分条结论），包含吞吐对比、时延分析和总结性结论。当用户要求总结/分析实验性能时使用。",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "experiment_ids": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": "要总结的实验ID列表",
+                    },
+                    "focus": {
+                        "type": "string",
+                        "description": "用户关注的重点，如'吞吐量'、'时延'等，可选",
+                    },
+                },
+                "required": ["experiment_ids"],
             },
         },
     },
