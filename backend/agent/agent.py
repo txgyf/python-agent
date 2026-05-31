@@ -36,6 +36,7 @@ class InfereValAgent:
             )
             choice = response.choices[0]
             if choice.finish_reason == "tool_calls":
+                self.messages.append(choice.message)
                 for tool_call in choice.message.tool_calls:
                     fn_name = tool_call.function.name
                     fn_args = {}
@@ -43,7 +44,6 @@ class InfereValAgent:
                         fn_args = json.loads(tool_call.function.arguments)
                     fn = TOOL_FUNCTIONS[fn_name]
                     result = fn(**fn_args)
-                    self.messages.append(choice.message)
                     self.messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
