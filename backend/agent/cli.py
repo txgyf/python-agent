@@ -1,15 +1,22 @@
-from agent.agent import InfereValAgent
+import os
+
+from agent.graph import run_graph, get_graph
 
 
 def main():
-    try:
-        agent = InfereValAgent()
-    except ValueError as e:
-        print(f"错误: {e}")
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    if not api_key:
+        print("错误: DEEPSEEK_API_KEY 环境变量未设置")
         print("请设置环境变量: export DEEPSEEK_API_KEY=你的key")
         return
 
-    print("InfereVal Agent 已启动（输入 quit 退出，reset 重置对话）")
+    try:
+        get_graph()
+    except Exception as e:
+        print(f"初始化失败: {e}")
+        return
+
+    print("InfereVal Agent 已启动（输入 quit 退出）")
     print()
 
     while True:
@@ -24,13 +31,9 @@ def main():
         if user_input.lower() == "quit":
             print("再见！")
             break
-        if user_input.lower() == "reset":
-            agent.reset()
-            print("对话已重置。\n")
-            continue
 
         try:
-            response = agent.chat(user_input)
+            response = run_graph(user_input)
             print(f"\nAgent: {response}\n")
         except Exception as e:
             print(f"\n出错了: {e}\n")
